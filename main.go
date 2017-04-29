@@ -27,6 +27,8 @@ var (
 func init() {
 	// load configuration
 	config.Init(ver)
+	// init handler
+	httpd.Init()
 
 	// register imgee help
 	plugin.RegisterByCommand("help", help)
@@ -88,20 +90,19 @@ LOOP:
 }
 
 // imgee help
-const usage = `
-      ***** TRY IT WITHOUT ANYTHING TO HAVE INTERFACE *****
+const usage = `      ***** TRY IT WITHOUT ANYTHING TO HAVE INTERFACE *****
 Usage:
       mylg [command] [args...]
 
       Available commands:
 
-      resize					resizing image
-      version					shows imgee version
+      resize		resizing image
+      version		shows imgee version
 
 Example:
-      imgee resize -w 200 -o static/image/a.zip test.jpg
-`
+      imgee resize -w 200 -o static/image/a.zip test.jpg`
 
+// print usage
 func help(args string) error {
 	if noIf {
 		println(usage)
@@ -111,6 +112,7 @@ func help(args string) error {
 	return nil
 }
 
+// print version
 func version(args string) error {
 	println(ver)
 	return nil

@@ -14,18 +14,19 @@ import (
 )
 
 const (
-	usage = `
-Usage:
+	// command help prompt
+	usage = `Usage:
 	The imgee tool, Processing images to fit the application.
-	The vi/emacs mode, almost all basic features are supported. Press tab to see which options are available.
+	The vi/emacs mode, almost all basic features are supported.
+	Press tab to see which options are available.
 
-	resize                      image resizing with common interpolation methods.
+	resize		image resizing with common interpolation methods.
 
 
-	Please visit http://imgee.me/docs for more information
-	`
+	Please visit http://imgee.me/docs for more information`
 )
 
+// teminal client
 type Client struct {
 	next     chan struct{}
 	cmd      chan<- string
@@ -33,6 +34,7 @@ type Client struct {
 	prompt   string
 }
 
+// init command and readline
 func Init(cmd chan<- string, next chan struct{}) (cli *Client) {
 	cli = &Client{
 		cmd:    cmd,
@@ -91,10 +93,12 @@ LOOP:
 	}
 }
 
-// SetPrompt set readline prompt and store it
+// color with prompt
 func Colorize(p string) string {
 	return fmt.Sprintf("\033[92m%s» \033[0m", strings.ToLower(p))
 }
+
+// SetPrompt set readline prompt and store it
 func (cli *Client) SetPrompt(p string) {
 	cli.readline.SetPrompt(Colorize(p))
 }
@@ -124,6 +128,7 @@ func (cli *Client) SetEmacs() {
 	}
 }
 
+// nexe circle
 func (cli *Client) Next() {
 	cli.next <- struct{}{}
 }
@@ -145,7 +150,7 @@ func CmdRgx() *regexp.Regexp {
 	return re
 }
 
-// checkUpdate checks if any new version is available
+// TODO checkUpdate checks if any new version is available
 func checkUpdate() {
 
 }

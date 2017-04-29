@@ -4,22 +4,21 @@ package resize
 import (
 	"archive/zip"
 	"errors"
-	"fmt"
 	"image"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	img "github.com/imgee/imgee/image"
+	img "github.com/imgee/image"
+	ext "github.com/imgee/image/extension"
 	"github.com/imgee/imgee/utils"
 	rsz "github.com/imgee/resize"
 )
 
 const (
 	command = "resize"
-	usage   = `
-usage:
+	usage   = `usage:
 	resize [thumbnail] path [options]
 options:
 	-i interp	Interpolation function in "nn", "bc", "bl", "mn", "l2", "l3" (default: l3)
@@ -29,12 +28,11 @@ options:
 Example:
 	resize -o static/image/a.zip test.png
 	resize -i l2 -w 200 test.png
-	resize -i l3 -w 200 -h 100 -o static/image/ test.png
-	`
+	resize -i l3 -w 200 -h 100 -o static/image/ test.png`
 )
 
 // Interpolation Function
-var interpolation = map[string]rsz.InterpolationFunction{
+var Interpolation = map[string]rsz.InterpolationFunction{
 	"nn": rsz.NearestNeighbor,
 	"bc": rsz.Bicubic,
 	"bl": rsz.Bilinear,
@@ -43,20 +41,18 @@ var interpolation = map[string]rsz.InterpolationFunction{
 	"l3": rsz.Lanczos3,
 }
 
-type resize struct {
-	out         io.Writer
-	paths       []string
-	isThumbnail bool
-	width       int
-	height      int
-	interp      string
+// some configuration before resize
+type Resize struct {
+	Out         io.Writer
+	Paths       []string
+	IsThumbnail bool
+	Width       int
+	Height      int
+	Interp      string
 }
 
-func New(out io.Writer) *resize {
-	return &resize{out: out}
-}
-
-func (rs *resize) Exec(args string) error {
+// terminal exec function
+func (rs *Resize) Exec(args string) error {
 	// parse params
 	nArgs, flag := utils.Flag(args)
 	// print help
@@ -64,7 +60,7 @@ func (rs *resize) Exec(args string) error {
 		len(nArgs) == 0 ||
 		nArgs == "thumbnail" {
 		rs.help()
-		return fmt.Errorf("")
+		return nil
 	}
 
 	// second command and path
@@ -72,17 +68,17 @@ func (rs *resize) Exec(args string) error {
 	var paths []string
 	for _, v := range fields {
 		if v == "thumbnail" {
-			rs.isThumbnail = true
+			rs.IsThumbnail = true
 			continue
 		}
 		paths = append(paths, v)
 	}
-	rs.paths = paths
+	rs.Paths = paths
 
 	// flags
-	rs.interp = utils.SetFlag(flag, "i", "l3").(string)
-	rs.width = utils.SetFlag(flag, "w", 0).(int)
-	rs.height = utils.SetFlag(flag, "h", 0).(int)
+	rs.Interp = utils.SetFlag(flag, "i", "l3").(string)
+	rs.Width = utils.SetFlag(flag, "w", 0).(int)
+	rs.Height = utils.SetFlag(flag, "h", 0).(int)
 
 	// output path
 	out := utils.SetFlag(flag, "o", "imgee.zip").(string)
@@ -96,31 +92,35 @@ func (rs *resize) Exec(args string) error {
 		return err
 	}
 	defer f.Close()
-	rs.out = f
+	rs.Out = f
 
 	// handle with image
 	return rs.walk()
 }
 
-func (rs *resize) Cmds() []string {
+// sub commands
+func (rs *Resize) Cmds() []string {
 	return []string{
 		"thumbnail",
 	}
 }
 
-func (rs *resize) Command() string {
+// command
+func (rs *Resize) Command() string {
 	return command
 }
 
-func (rs *resize) help() {
+// print usage
+func (rs *Resize) help() {
 	print(usage)
 }
 
-func (rs *resize) walk() error {
-	zipper := zip.NewWriter(rs.out)
+// walk files with given dir
+func (rs *Resize) walk() error {
+	zipper := zip.NewWriter(rs.Out)
 	defer zipper.Close()
 
-	for _, p := range rs.paths {
+	for _, p := range rs.Paths {
 		// create zip file
 		f, err := os.Open(p)
 		if err != nil {
@@ -143,7 +143,7 @@ func (rs *resize) walk() error {
 		}
 
 		// resize
-		err = rs.resize(f, w)
+		err = rs.Resize(f, w)
 		if err != nil {
 			return err
 		}
@@ -158,29 +158,30 @@ func (rs *resize) walk() error {
 	return nil
 }
 
-func (rs *resize) resize(r io.Reader, w io.Writer) error {
+// resize image by config
+func (rs *Resize) Resize(r io.Reader, w io.Writer) error {
 	m, name, err := image.Decode(r)
 	if err != nil {
 		return nil
 	}
 
-	fm, ok := img.Formats[name]
+	fm, ok := ext.Extensions[name]
 	if !ok {
 		return errors.New("unknown format")
 	}
 
-	interp, ok := interpolation[rs.interp]
+	interp, ok := Interpolation[rs.Interp]
 	if !ok {
 		return errors.New("unknown interpolation")
 	}
 
-	if rs.isThumbnail {
-		m = rsz.Thumbnail(uint(rs.width), uint(rs.height), m, interp)
+	if rs.IsThumbnail {
+		m = rsz.Thumbnail(uint(rs.Width), uint(rs.Height), m, interp)
 		if err != nil {
 			return err
 		}
 	} else {
-		m = rsz.Resize(uint(rs.width), uint(rs.height), m, interp)
+		m = rsz.Resize(uint(rs.Width), uint(rs.Height), m, interp)
 		if err != nil {
 			return err
 		}

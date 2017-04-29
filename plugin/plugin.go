@@ -3,9 +3,9 @@ package plugin
 
 import (
 	"errors"
-	"os"
 
 	"github.com/chzyer/readline"
+	"github.com/imgee/imgee/config"
 	"github.com/imgee/imgee/resize"
 )
 
@@ -23,7 +23,8 @@ type Plugin interface {
 
 // register plugins
 func init() {
-	Register(resize.New(os.Stdout))
+	Register(config.Conf)
+	Register(&resize.Resize{})
 }
 
 // register plugins

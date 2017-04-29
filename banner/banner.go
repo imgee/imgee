@@ -18,7 +18,7 @@ const b = `
        Opensource image processing tools
                 http://imgee.me
 ================== Imgee %s ==================
-	`
+`
 
 // Println print out banner information
 func Println(version string) {
